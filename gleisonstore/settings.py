@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import sys
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,9 +39,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_extensions",
     "order",
     "product",
+    "rest_framework",
+    "rest_framework.authtoken",
 ]
+
+if 'test' not in sys.argv:
+    INSTALLED_APPS += ['debug_toolbar']
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -50,6 +58,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if 'test' not in sys.argv:
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+
 
 ROOT_URLCONF = "gleisonstore.urls"
 
