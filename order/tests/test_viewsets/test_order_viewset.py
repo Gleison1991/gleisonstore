@@ -3,6 +3,7 @@ import json
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
+from rest_framework.authtoken.models import Token
 
 from order.factories import OrderFactory, UserFactory
 from order.models import Order
@@ -15,62 +16,34 @@ class TestOrderViewSet(APITestCase):
     client = APIClient()
 
     def setUp(self):
+        self.user = UserFactory()
+
+        token = Token.objects.create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
         self.category = CategoryFactory(title="technology")
         self.product = ProductFactory(
             title="mouse", price=100, category=[self.category]
         )
         self.order = OrderFactory(product=[self.product])
 
-        def test_order(self):
-            response = self.client.get(
-                reverse("order-list", kwargs={"version": "v1"}))
-
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-            order_data = json.loads(response.content)
-            for product in order_data[0]["product"]:
-                if product["title"] == self.product.title:
-                    self.assertEqual(
-                        product["title"], self.product.title
-                    )
-                    self.assertEqual(
-                        product["price"], self.product.price
-                    )
-                    self.assertEqual(
-                        product["active"], self.product.active
-                    )
-                    self.assertEqual(
-                        product["category"][0]["title"],
-                        self.category.title,
-                    )
-
-    def test_order(self):
-        response = self.client.get(
-            reverse("order-list", kwargs={"version": "v1"}))
-
+    def test_order_list(self):
+        response = self.client.get(reverse("order-list", kwargs={"version": "v1"}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         order_data = json.loads(response.content)
-        for product in order_data[0]["product"]:
+        for product in order_data.get(0, {}).get("product", []):
             if product["title"] == self.product.title:
+                self.assertEqual(product["title"], self.product.title)
+                self.assertEqual(product["price"], self.product.price)
+                self.assertEqual(product["active"], self.product.active)
                 self.assertEqual(
-                    product["title"], self.product.title
-                )
-                self.assertEqual(
-                    product["price"], self.product.price
-                )
-                self.assertEqual(
-                    product["active"], self.product.active
-                )
-                self.assertEqual(
-                    product["category"][0]["title"],
-                    self.category.title,
+                    product["category"][0]["title"], self.category.title
                 )
 
     def test_create_order(self):
         user = UserFactory()
-        product = ProductFactory()
-        data = json.dumps({"products_id": [product.id], "user": user.id})
+        data = json.dumps({"products_id": [self.product.id], "user": user.id})
 
         response = self.client.post(
             reverse("order-list", kwargs={"version": "v1"}),
